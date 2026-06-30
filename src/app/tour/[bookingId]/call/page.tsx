@@ -1,0 +1,35 @@
+import { prisma } from "@/lib/prisma";
+import { notFound, redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { CallRoom } from "@/components/call-room";
+import { format } from "date-fns";
+
+export const dynamic = "force-dynamic";
+
+export default async function CallPage({ params }: { params: Promise<{ bookingId: string }> }) {
+  const { bookingId } = await params;
+  const session = await auth();
+  if (!session?.user) redirect(`/sign-in?callbackUrl=/tour/${bookingId}/call`);
+
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { listing: true },
+  });
+  if (!booking) notFound();
+
+  if (booking.clientId !== session.user.id && booking.agentId !== session.user.id) {
+    redirect("/");
+  }
+
+  return (
+    <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold">{booking.listing.title}</h1>
+        <p className="text-muted-foreground">
+          Live tour &middot; {format(booking.scheduledAt, "EEE, MMM d 'at' h:mm a")}
+        </p>
+      </div>
+      <CallRoom bookingId={booking.id} fallbackPhone={booking.fallbackPhone} />
+    </div>
+  );
+}
