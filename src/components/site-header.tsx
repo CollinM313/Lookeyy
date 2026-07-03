@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth, signOut } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Key } from "lucide-react";
+import { Home } from "lucide-react";
 
 const dashboardPathForRole: Record<string, string> = {
   CLIENT: "/dashboard/client",
@@ -17,7 +17,7 @@ export async function SiteHeader() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2 font-semibold text-lg">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <Key className="h-4 w-4" />
+            <Home className="h-4 w-4" />
           </span>
           Lookeyy
         </Link>
