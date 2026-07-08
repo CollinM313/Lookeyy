@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { DashboardShell } from "@/components/dashboard-shell";
-import { LayoutDashboard, ListChecks, Home, Users, UserCheck } from "lucide-react";
+import { LayoutDashboard, ListChecks, Home, Users, UserCheck, KeyRound } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard/admin", label: "Overview", icon: LayoutDashboard },
@@ -9,6 +9,7 @@ const navItems = [
   { href: "/dashboard/admin/listings", label: "Listings", icon: Home },
   { href: "/dashboard/admin/agents", label: "Agent applications", icon: UserCheck },
   { href: "/dashboard/admin/agents/all", label: "All agents", icon: Users },
+  { href: "/dashboard/admin/password", label: "Change password", icon: KeyRound },
 ];
 
 export default async function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
