@@ -41,7 +41,7 @@ export function BookingActions({
       {status === "CONFIRMED" && tourType === "LIVE" && (
         <Button asChild size="sm" variant="secondary">
           <Link href={`/tour/${bookingId}/call`}>
-            <Video className="mr-1 h-3.5 w-3.5" /> Join call
+            <Video className="mr-1 h-3.5 w-3.5" /> Tour details
           </Link>
         </Button>
       )}

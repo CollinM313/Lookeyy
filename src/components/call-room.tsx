@@ -1,114 +1,121 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { getOrCreateCallRoom, setFallbackPhone } from "@/app/actions/video-call";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { PhoneCall, Video } from "lucide-react";
+import { PhoneCall, Video, Copy, Check } from "lucide-react";
+import { setFallbackPhone } from "@/app/actions/video-call";
 
-type CallState =
-  | { status: "loading" }
-  | { status: "unconfigured" }
-  | { status: "error"; message: string }
-  | { status: "ready"; roomUrl: string; token: string | null };
-
-export function CallRoom({ bookingId, fallbackPhone }: { bookingId: string; fallbackPhone: string | null }) {
-  const [state, setState] = useState<CallState>({ status: "loading" });
+export function CallRoom({
+  bookingId,
+  fallbackPhone,
+  agentPhone,
+  agentName,
+}: {
+  bookingId: string;
+  fallbackPhone: string | null;
+  agentPhone?: string | null;
+  agentName?: string | null;
+}) {
   const [phone, setPhone] = useState(fallbackPhone ?? "");
-  const frameRef = useRef<HTMLDivElement>(null);
-  const callObjectRef = useRef<unknown>(null);
+  const [zoomLink, setZoomLink] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const result = await getOrCreateCallRoom(bookingId);
-      if (cancelled) return;
-      if ("error" in result && result.error) {
-        setState({ status: "error", message: result.error });
-        return;
-      }
-      if ("configured" in result && !result.configured) {
-        setState({ status: "unconfigured" });
-        return;
-      }
-      if ("roomUrl" in result && result.roomUrl) {
-        setState({ status: "ready", roomUrl: result.roomUrl, token: result.token ?? null });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [bookingId]);
-
-  useEffect(() => {
-    if (state.status !== "ready" || !frameRef.current) return;
-
-    let destroyed = false;
-    import("@daily-co/daily-js").then(({ default: DailyIframe }) => {
-      if (destroyed || !frameRef.current) return;
-      const callFrame = DailyIframe.createFrame(frameRef.current, {
-        iframeStyle: { width: "100%", height: "100%", border: "0", borderRadius: "1rem" },
-        showLeaveButton: true,
-      });
-      callObjectRef.current = callFrame;
-      callFrame.join({ url: state.roomUrl, token: state.token ?? undefined });
-    });
-
-    return () => {
-      destroyed = true;
-      const frame = callObjectRef.current as { destroy?: () => void } | null;
-      frame?.destroy?.();
-    };
-  }, [state]);
-
-  async function handleSavePhone() {
+  async function handleSave() {
     const r = await setFallbackPhone(bookingId, phone);
-    if (r.error) toast.error(r.error);
-    else toast.success("We'll coordinate a call to this number.");
+    if (r.error) {
+      toast.error(r.error);
+    } else {
+      setSaved(true);
+      toast.success("Contact info saved. Your agent will reach out at tour time.");
+    }
   }
 
-  if (state.status === "loading") {
-    return <div className="flex h-96 items-center justify-center text-muted-foreground">Connecting…</div>;
+  async function handleCopyZoom() {
+    await navigator.clipboard.writeText(zoomLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }
 
-  if (state.status === "error") {
-    return <div className="flex h-96 items-center justify-center text-destructive">{state.message}</div>;
-  }
-
-  if (state.status === "unconfigured") {
-    return (
-      <div className="rounded-2xl border border-dashed border-border p-8">
-        <div className="flex items-center gap-2 text-primary">
-          <Video className="h-5 w-5" />
-          <p className="font-semibold">Live video isn&apos;t configured yet</p>
+  return (
+    <div className="space-y-6">
+      {/* Agent contact info */}
+      {agentName && (
+        <div className="rounded-2xl border border-border bg-secondary/30 p-6">
+          <div className="flex items-center gap-2 text-primary mb-2">
+            <PhoneCall className="h-5 w-5" />
+            <p className="font-semibold">Your agent: {agentName}</p>
+          </div>
+          {agentPhone ? (
+            <p className="text-sm text-muted-foreground">
+              Your agent will call or FaceTime you at <span className="font-medium text-foreground">{agentPhone}</span> at the scheduled time.
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Your agent will reach out to coordinate the tour at the scheduled time.
+            </p>
+          )}
         </div>
-        <p className="mt-2 text-sm text-muted-foreground">
-          This is the integration point for in-app live video. Set <code className="rounded bg-muted px-1">DAILY_API_KEY</code> (and
-          optionally <code className="rounded bg-muted px-1">NEXT_PUBLIC_DAILY_DOMAIN</code>) in your environment to enable
-          embedded Daily.co video calls here — see the README for setup steps.
-        </p>
+      )}
 
-        <div className="mt-6 rounded-xl bg-secondary/50 p-5">
-          <div className="flex items-center gap-2">
-            <PhoneCall className="h-4 w-4 text-primary" />
-            <p className="font-medium">In the meantime: schedule a phone / FaceTime call</p>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Leave a number and your agent will call or FaceTime you at the scheduled time.
-          </p>
-          <div className="mt-3 flex max-w-sm items-end gap-2">
-            <div className="flex-1 space-y-1">
-              <Label htmlFor="fallbackPhone">Phone number</Label>
-              <Input id="fallbackPhone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+      {/* How the tour works */}
+      <div className="rounded-2xl border border-border p-6 space-y-4">
+        <h3 className="font-semibold text-lg">How your tour works</h3>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            { icon: PhoneCall, title: "FaceTime", body: "Your agent will FaceTime you at the scheduled time using the number below." },
+            { icon: Video, title: "Zoom", body: "Prefer Zoom? Share a link below and your agent will join at tour time." },
+            { icon: PhoneCall, title: "Phone call", body: "Your agent can also do a regular phone call and narrate the tour for you." },
+          ].map((opt) => (
+            <div key={opt.title} className="rounded-xl bg-secondary/40 p-4">
+              <opt.icon className="h-5 w-5 text-primary mb-2" />
+              <p className="font-medium text-sm">{opt.title}</p>
+              <p className="text-xs text-muted-foreground mt-1">{opt.body}</p>
             </div>
-            <Button onClick={handleSavePhone}>Save</Button>
-          </div>
+          ))}
         </div>
       </div>
-    );
-  }
 
-  return <div ref={frameRef} className="h-[70vh] w-full overflow-hidden rounded-2xl bg-black" />;
+      {/* Client contact info */}
+      <div className="rounded-2xl border border-border p-6 space-y-4">
+        <h3 className="font-semibold">Your contact info for the tour</h3>
+        <div className="space-y-1.5 max-w-sm">
+          <Label htmlFor="fallbackPhone">Phone / FaceTime number</Label>
+          <div className="flex gap-2">
+            <Input
+              id="fallbackPhone"
+              type="tel"
+              placeholder="e.g. 555-123-4567"
+              value={phone}
+              onChange={(e) => { setPhone(e.target.value); setSaved(false); }}
+            />
+            <Button onClick={handleSave} disabled={saved || !phone}>
+              {saved ? <><Check className="h-4 w-4 mr-1" /> Saved</> : "Save"}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">Your agent will call or FaceTime this number at tour time.</p>
+        </div>
+
+        <div className="space-y-1.5 max-w-sm">
+          <Label htmlFor="zoomLink">Zoom link (optional)</Label>
+          <div className="flex gap-2">
+            <Input
+              id="zoomLink"
+              type="url"
+              placeholder="https://zoom.us/j/..."
+              value={zoomLink}
+              onChange={(e) => setZoomLink(e.target.value)}
+            />
+            <Button variant="outline" onClick={handleCopyZoom} disabled={!zoomLink}>
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">Share your Zoom meeting link and your agent will join.</p>
+        </div>
+      </div>
+    </div>
+  );
 }

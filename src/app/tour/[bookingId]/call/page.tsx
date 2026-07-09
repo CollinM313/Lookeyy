@@ -13,7 +13,7 @@ export default async function CallPage({ params }: { params: Promise<{ bookingId
 
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
-    include: { listing: true },
+    include: { listing: true, agent: true },
   });
   if (!booking) notFound();
 
@@ -22,14 +22,19 @@ export default async function CallPage({ params }: { params: Promise<{ bookingId
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-4">
+    <div className="mx-auto flex min-h-screen max-w-3xl flex-col px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold">{booking.listing.title}</h1>
         <p className="text-muted-foreground">
-          Live tour &middot; {format(booking.scheduledAt, "EEE, MMM d 'at' h:mm a")}
+          Tour scheduled for {format(booking.scheduledAt, "EEE, MMM d 'at' h:mm a")}
         </p>
       </div>
-      <CallRoom bookingId={booking.id} fallbackPhone={booking.fallbackPhone} />
+      <CallRoom
+        bookingId={booking.id}
+        fallbackPhone={booking.fallbackPhone}
+        agentPhone={booking.agent?.phone ?? null}
+        agentName={booking.agent?.name ?? null}
+      />
     </div>
   );
 }
