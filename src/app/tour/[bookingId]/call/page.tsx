@@ -13,13 +13,17 @@ export default async function CallPage({ params }: { params: Promise<{ bookingId
 
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
-    include: { listing: true, agent: true },
+    include: {
+      listing: true,
+      agent: true,
+      client: true,
+    },
   });
   if (!booking) notFound();
 
-  if (booking.clientId !== session.user.id && booking.agentId !== session.user.id) {
-    redirect("/");
-  }
+  const isAgent = booking.agentId === session.user.id;
+  const isClient = booking.clientId === session.user.id;
+  if (!isAgent && !isClient) redirect("/");
 
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col px-4 py-8 sm:px-6 lg:px-8">
@@ -34,6 +38,10 @@ export default async function CallPage({ params }: { params: Promise<{ bookingId
         fallbackPhone={booking.fallbackPhone}
         agentPhone={booking.agent?.phone ?? null}
         agentName={booking.agent?.name ?? null}
+        clientName={booking.client?.name ?? null}
+        clientPhone={booking.fallbackPhone}
+        meetingLink={booking.dailyRoomUrl}
+        isAgent={isAgent}
       />
     </div>
   );

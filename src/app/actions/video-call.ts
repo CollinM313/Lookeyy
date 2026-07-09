@@ -39,3 +39,15 @@ export async function setFallbackPhone(bookingId: string, phone: string) {
   await prisma.booking.update({ where: { id: bookingId }, data: { fallbackPhone: phone } });
   return { success: true };
 }
+
+export async function setZoomLink(bookingId: string, zoomLink: string) {
+  const session = await auth();
+  if (!session?.user) return { error: "Not authorized." };
+
+  const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+  if (!booking) return { error: "Booking not found." };
+  if (booking.agentId !== session.user.id) return { error: "Only the assigned agent can set the meeting link." };
+
+  await prisma.booking.update({ where: { id: bookingId }, data: { dailyRoomUrl: zoomLink } });
+  return { success: true };
+}
