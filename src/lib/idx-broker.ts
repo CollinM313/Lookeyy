@@ -28,6 +28,7 @@ export type IdxListing = {
   detailsUrlSlug: string;
   fullDetailsURL: string;
   image: Record<string, IdxImage | number>;
+  rntLse: string;
   narContact: string;
   listingAgentID: string;
   listingOfficeID: string;
