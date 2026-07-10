@@ -20,6 +20,7 @@ export type IdxListing = {
   propType: string;
   propSubType: string;
   idxStatus: string;
+  idxPropType: string;
   remarksConcat: string;
   yearBuilt: number;
   latitude: number;
