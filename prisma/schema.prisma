@@ -154,9 +154,10 @@ model Listing {
   description  String        @db.Text
   propertyType PropertyType
   status       ListingStatus @default(AVAILABLE)
-  lat          Float
-  lng          Float
+  lat          Float?
+  lng          Float?
   neighborhoodInfo String?   @db.Text
+  idxListingKey String?      @unique
   agentId      String?
   agent        User?         @relation("AgentListings", fields: [agentId], references: [id])
   createdAt    DateTime      @default(now())

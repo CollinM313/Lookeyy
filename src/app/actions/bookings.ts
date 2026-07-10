@@ -55,8 +55,8 @@ export async function createBooking(input: z.infer<typeof createBookingSchema>) 
 
   // Run smart matching and move to admin approval queue.
   const candidates = await suggestAgentForBooking({
-    listingLat: listing.lat,
-    listingLng: listing.lng,
+    listingLat: listing.lat ?? 0,
+    listingLng: listing.lng ?? 0,
     scheduledAt,
   });
   const top = candidates[0];

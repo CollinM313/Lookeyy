@@ -1,7 +1,6 @@
-import { prisma } from "@/lib/prisma";
-import { ListingCard } from "@/components/listing-card";
+import { getAllListings } from "@/lib/idx-broker";
+import { IdxListingCard } from "@/components/idx-listing-card";
 import { ListingFilters } from "@/components/listing-filters";
-import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -10,34 +9,8 @@ type SearchParams = {
   maxPrice?: string;
   beds?: string;
   baths?: string;
-  propertyType?: string;
   city?: string;
 };
-
-async function getListings(params: SearchParams) {
-  const where: Prisma.ListingWhereInput = { status: "AVAILABLE" };
-
-  if (params.minPrice || params.maxPrice) {
-    where.price = {
-      ...(params.minPrice ? { gte: Number(params.minPrice) } : {}),
-      ...(params.maxPrice ? { lte: Number(params.maxPrice) } : {}),
-    };
-  }
-  if (params.beds) where.beds = { gte: Number(params.beds) };
-  if (params.baths) where.baths = { gte: Number(params.baths) };
-  if (params.propertyType) where.propertyType = params.propertyType as Prisma.EnumPropertyTypeFilter["equals"];
-  if (params.city) where.city = { contains: params.city, mode: "insensitive" };
-
-  try {
-    return await prisma.listing.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      include: { photos: { take: 1, orderBy: { order: "asc" } } },
-    });
-  } catch {
-    return [];
-  }
-}
 
 export default async function ListingsPage({
   searchParams,
@@ -45,7 +18,14 @@ export default async function ListingsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
-  const listings = await getListings(params);
+
+  const listings = await getAllListings({
+    minPrice: params.minPrice ? Number(params.minPrice) : undefined,
+    maxPrice: params.maxPrice ? Number(params.maxPrice) : undefined,
+    beds: params.beds ? Number(params.beds) : undefined,
+    baths: params.baths ? Number(params.baths) : undefined,
+    city: params.city || undefined,
+  });
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -63,29 +43,18 @@ export default async function ListingsPage({
       {listings.length > 0 ? (
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {listings.map((l) => (
-            <ListingCard
-              key={l.id}
-              listing={{
-                id: l.id,
-                title: l.title,
-                city: l.city,
-                state: l.state,
-                price: l.price,
-                beds: l.beds,
-                baths: l.baths,
-                sqft: l.sqft,
-                propertyType: l.propertyType,
-                status: l.status,
-                photoUrl: l.photos[0]?.url ?? null,
-              }}
-            />
+            <IdxListingCard key={`${l.idxID}-${l.listingID}`} listing={l} />
           ))}
         </div>
       ) : (
         <div className="mt-16 rounded-2xl border border-dashed border-border py-16 text-center text-muted-foreground">
-          No listings match your filters yet. Try widening your search, or seed the database for demo data.
+          No listings match your filters. Try widening your search.
         </div>
       )}
+
+      <p className="mt-10 text-center text-xs text-muted-foreground">
+        Listing data provided by IDX Broker · California Desert Association of Realtors · Data deemed reliable but not guaranteed.
+      </p>
     </div>
   );
 }
