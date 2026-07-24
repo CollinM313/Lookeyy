@@ -15,8 +15,16 @@ export async function updateListingVideoUrl(listingId: string, rawUrl: string) {
   });
 
   if (!listing) return { error: "Listing not found" };
-  if (listing.agentId !== session.user.id && session.user.role !== "ADMIN") {
-    return { error: "Not authorized" };
+
+  const isOwner = listing.agentId === session.user.id;
+  const isAdmin = session.user.role === "ADMIN";
+  const isApprovedGuest = !isOwner && !isAdmin && await prisma.videoTourRequest.findFirst({
+    where: { listingId, requestingAgentId: session.user.id, status: "APPROVED" },
+    select: { id: true },
+  }).then(Boolean);
+
+  if (!isOwner && !isAdmin && !isApprovedGuest) {
+    return { error: "Not authorized — request permission from the listing agent first." };
   }
 
   const trimmed = rawUrl.trim();

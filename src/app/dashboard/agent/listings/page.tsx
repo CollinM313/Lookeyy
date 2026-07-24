@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, BedDouble, Bath } from "lucide-react";
 import { VideoUrlForm } from "@/components/agent/video-url-form";
+import { IncomingFilmRequests } from "@/components/agent/incoming-film-requests";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,14 @@ export default async function AgentListingsPage() {
 
   const listings = await prisma.listing.findMany({
     where: { agentId: session.user.id },
-    include: { photos: { take: 1, orderBy: { order: "asc" } } },
+    include: {
+      photos: { take: 1, orderBy: { order: "asc" } },
+      videoRequests: {
+        where: { ownerAgentId: session.user.id },
+        include: { requestingAgent: { select: { name: true, email: true } } },
+        orderBy: { createdAt: "desc" },
+      },
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -70,6 +78,7 @@ export default async function AgentListingsPage() {
                 </div>
               </div>
 
+              <IncomingFilmRequests requests={l.videoRequests} />
               <VideoUrlForm listingId={l.id} currentVideoUrl={l.videoUrl} />
             </div>
           ))}

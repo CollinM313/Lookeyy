@@ -1,11 +1,12 @@
 import { auth } from "@/lib/auth";
 import { DashboardShell } from "@/components/dashboard-shell";
-import { CalendarDays, Clock, Home, User } from "lucide-react";
+import { CalendarDays, Clock, Home, User, Video } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard/agent", label: "My bookings", icon: CalendarDays },
   { href: "/dashboard/agent/availability", label: "Availability", icon: Clock },
   { href: "/dashboard/agent/listings", label: "My listings", icon: Home },
+  { href: "/dashboard/agent/film-requests", label: "Film a tour", icon: Video },
   { href: "/dashboard/agent/profile", label: "Profile", icon: User },
 ];
 

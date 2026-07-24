@@ -38,6 +38,7 @@ model User {
   reviewsGiven    Review[]  @relation("ClientReviews")
   favorites       Favorite[]
   notifications   Notification[]
+  filmRequests    VideoTourRequest[] @relation("FilmRequests")
 }
 
 model Account {
@@ -164,9 +165,35 @@ model Listing {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  photos    ListingPhoto[]
-  bookings  Booking[]
-  favorites Favorite[]
+  photos          ListingPhoto[]
+  bookings        Booking[]
+  favorites       Favorite[]
+  videoRequests   VideoTourRequest[]
+}
+
+// ----------------------------- Video Tour Requests -----------------------------
+
+enum VideoTourRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model VideoTourRequest {
+  id                String                  @id @default(cuid())
+  listingId         String
+  listing           Listing                 @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  requestingAgentId String
+  requestingAgent   User                    @relation("FilmRequests", fields: [requestingAgentId], references: [id])
+  ownerAgentId      String?
+  message           String?                 @db.Text
+  status            VideoTourRequestStatus  @default(PENDING)
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  @@unique([listingId, requestingAgentId])
+  @@index([requestingAgentId])
+  @@index([ownerAgentId])
 }
 
 model ListingPhoto {
