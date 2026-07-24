@@ -2,15 +2,89 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
-import { Play, Bed, Bath, Ruler, MapPin, Heart, Video } from "lucide-react";
+import { Play, Bed, Bath, Ruler, MapPin, Heart, Video, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TourRequestModal } from "@/components/tour-request-modal";
 import { ListingsMap, type MapListing } from "@/components/listings-map";
 import type { IdxListing } from "@/lib/idx-broker";
 import { getIdxThumbnail } from "@/lib/idx-broker";
 
-const FEATURED_YOUTUBE_ID = "F7afbjxVYCY";
-const FEATURED_LISTING_ID = "497"; // Saint Moritz Big Bear
+type VideoTour = {
+  youtubeId: string | null;
+  title: string;
+  address: string;
+  city: string;
+  state: string;
+  price: string;
+  beds: number;
+  baths: number;
+  duration: string;
+  /** Tailwind gradient classes for placeholder thumbnail */
+  gradient: string;
+};
+
+const VIDEO_TOURS: VideoTour[] = [
+  {
+    youtubeId: "F7afbjxVYCY",
+    title: "Mountain Retreat",
+    address: "649 Saint Moritz Dr",
+    city: "Big Bear Lake",
+    state: "CA",
+    price: "$749,000",
+    beds: 4,
+    baths: 3,
+    duration: "4:32",
+    gradient: "from-blue-900 to-slate-700",
+  },
+  {
+    youtubeId: null,
+    title: "Desert Modern",
+    address: "72 Desert Bloom Ct",
+    city: "Palm Desert",
+    state: "CA",
+    price: "$1,250,000",
+    beds: 5,
+    baths: 4,
+    duration: "3:15",
+    gradient: "from-amber-700 to-orange-900",
+  },
+  {
+    youtubeId: null,
+    title: "Golf Course Estate",
+    address: "81240 Peary Place",
+    city: "La Quinta",
+    state: "CA",
+    price: "$2,400,000",
+    beds: 5,
+    baths: 5,
+    duration: "5:48",
+    gradient: "from-emerald-800 to-teal-900",
+  },
+  {
+    youtubeId: null,
+    title: "Ranch & Vineyard",
+    address: "39375 San Ignacio Rd",
+    city: "Hemet",
+    state: "CA",
+    price: "$11,995,000",
+    beds: 4,
+    baths: 5,
+    duration: "6:20",
+    gradient: "from-stone-700 to-zinc-800",
+  },
+  {
+    youtubeId: null,
+    title: "Oceanview Retreat",
+    address: "4820 Oceanview Ln",
+    city: "San Diego",
+    state: "CA",
+    price: "$589,000",
+    beds: 3,
+    baths: 2,
+    duration: "2:50",
+    gradient: "from-cyan-800 to-blue-900",
+  },
+];
 
 type Props = {
   listings: IdxListing[];
@@ -37,18 +111,12 @@ const BED_OPTIONS = [
 export function BrowseListingsClient({ listings }: Props) {
   const [filter, setFilter] = useState<FilterState>({ city: null, maxPrice: null, minBeds: null });
   const [modalAddress, setModalAddress] = useState<string | null>(null);
-  const [playingFeatured, setPlayingFeatured] = useState(false);
+  const [playingId, setPlayingId] = useState<string | null>(null);
 
-  // Derive unique cities for filter pills (top 5 by count)
   const cities = useMemo(() => {
     const counts: Record<string, number> = {};
-    listings.forEach((l) => {
-      counts[l.cityName] = (counts[l.cityName] ?? 0) + 1;
-    });
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([city]) => city);
+    listings.forEach((l) => { counts[l.cityName] = (counts[l.cityName] ?? 0) + 1; });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([city]) => city);
   }, [listings]);
 
   const filtered = useMemo(() => {
@@ -79,11 +147,9 @@ export function BrowseListingsClient({ listings }: Props) {
   function toggleCity(city: string) {
     setFilter((f) => ({ ...f, city: f.city === city ? null : city }));
   }
-
   function togglePrice(val: number) {
     setFilter((f) => ({ ...f, maxPrice: f.maxPrice === val ? null : val }));
   }
-
   function toggleBeds(val: number) {
     setFilter((f) => ({ ...f, minBeds: f.minBeds === val ? null : val }));
   }
@@ -125,90 +191,37 @@ export function BrowseListingsClient({ listings }: Props) {
 
         {/* Feed */}
         <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
-          <p className="mb-5 text-sm text-muted-foreground">
+
+          {/* ── Video tour row ── */}
+          <div className="mb-6">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Featured video tours
+            </p>
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+              {VIDEO_TOURS.map((tour) => (
+                <VideoTourCard
+                  key={tour.address}
+                  tour={tour}
+                  playing={playingId === tour.address}
+                  onPlay={() => setPlayingId(tour.address)}
+                  onStop={() => setPlayingId(null)}
+                  onRequestTour={() => setModalAddress(`${tour.address}, ${tour.city}, ${tour.state}`)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* ── Listings ── */}
+          <p className="mb-4 text-sm text-muted-foreground">
             {filtered.length} home{filtered.length === 1 ? "" : "s"} with video tours
           </p>
 
           <div className="flex flex-col gap-5">
-
-            {/* Featured video card */}
-            <div className="overflow-hidden rounded-2xl border border-primary/30 bg-card shadow-sm">
-              <div className="relative aspect-video w-full overflow-hidden bg-black">
-                {playingFeatured ? (
-                  <iframe
-                    src={`https://www.youtube.com/embed/${FEATURED_YOUTUBE_ID}?autoplay=1&rel=0&modestbranding=1`}
-                    className="h-full w-full"
-                    allow="autoplay; fullscreen; picture-in-picture"
-                    allowFullScreen
-                    title="649 Saint Moritz Dr – Big Bear Lake"
-                  />
-                ) : (
-                  <>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={`https://img.youtube.com/vi/${FEATURED_YOUTUBE_ID}/maxresdefault.jpg`}
-                      alt="649 Saint Moritz Dr, Big Bear Lake"
-                      className="h-full w-full object-cover opacity-80"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    <button
-                      onClick={() => setPlayingFeatured(true)}
-                      className="absolute inset-0 flex items-center justify-center"
-                      aria-label="Play tour video"
-                    >
-                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/95 shadow-2xl transition-transform hover:scale-110">
-                        <Play className="h-6 w-6 translate-x-0.5 text-zinc-900" fill="currentColor" />
-                      </div>
-                    </button>
-                    <span className="absolute left-3 top-3 rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
-                      Featured tour
-                    </span>
-                    <span className="absolute bottom-3 left-3 rounded bg-black/60 px-2 py-0.5 text-xs text-white">
-                      4:32
-                    </span>
-                  </>
-                )}
-              </div>
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xl font-semibold">$749,000</p>
-                    <p className="mt-0.5 font-medium">649 Saint Moritz Dr</p>
-                    <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <MapPin className="h-3.5 w-3.5" /> Big Bear Lake, CA
-                    </p>
-                    <div className="mt-2 flex gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1"><Bed className="h-4 w-4" /> 4</span>
-                      <span className="flex items-center gap-1"><Bath className="h-4 w-4" /> 3</span>
-                      <span className="flex items-center gap-1"><Ruler className="h-4 w-4" /> 2,100 sqft</span>
-                    </div>
-                  </div>
-                  <button className="text-muted-foreground hover:text-primary" aria-label="Save listing">
-                    <Heart className="h-5 w-5" />
-                  </button>
-                </div>
-                <div className="mt-4 flex gap-2">
-                  <Button
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => setModalAddress("649 Saint Moritz Dr, Big Bear Lake, CA")}
-                  >
-                    <Video className="mr-1.5 h-4 w-4" /> Request a tour
-                  </Button>
-                  <Button size="sm" variant="outline" className="flex-1" onClick={() => setPlayingFeatured(true)}>
-                    <Play className="mr-1.5 h-4 w-4" /> Watch tour
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* IDX listing cards */}
             {filtered.length === 0 && (
               <div className="rounded-2xl border border-dashed border-border py-16 text-center text-muted-foreground">
                 No listings match your filters. Try widening your search.
               </div>
             )}
-
             {filtered.map((listing) => (
               <ListingBrowseCard
                 key={`${listing.idxID}-${listing.listingID}`}
@@ -216,7 +229,6 @@ export function BrowseListingsClient({ listings }: Props) {
                 onRequestTour={(addr) => setModalAddress(addr)}
               />
             ))}
-
             <p className="pt-4 text-center text-xs text-muted-foreground">
               Listing data provided by IDX Broker · California Desert Association of Realtors · Data deemed reliable but not guaranteed.
             </p>
@@ -235,13 +247,106 @@ export function BrowseListingsClient({ listings }: Props) {
         </div>
       </div>
 
-      {/* Tour request modal */}
       <TourRequestModal
         open={modalAddress !== null}
         onClose={() => setModalAddress(null)}
         propertyAddress={modalAddress ?? undefined}
       />
     </>
+  );
+}
+
+function VideoTourCard({
+  tour,
+  playing,
+  onPlay,
+  onStop,
+  onRequestTour,
+}: {
+  tour: VideoTour;
+  playing: boolean;
+  onPlay: () => void;
+  onStop: () => void;
+  onRequestTour: () => void;
+}) {
+  return (
+    <div className="flex-none w-[260px] overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
+      {/* Thumbnail / player */}
+      <div className="relative aspect-video w-full overflow-hidden bg-black">
+        {playing && tour.youtubeId ? (
+          <>
+            <iframe
+              src={`https://www.youtube.com/embed/${tour.youtubeId}?autoplay=1&rel=0&modestbranding=1`}
+              className="h-full w-full"
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+              title={tour.title}
+            />
+            <button
+              onClick={onStop}
+              className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+              aria-label="Close video"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </>
+        ) : (
+          <>
+            {tour.youtubeId ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={`https://img.youtube.com/vi/${tour.youtubeId}/mqdefault.jpg`}
+                alt={tour.title}
+                className="h-full w-full object-cover opacity-80"
+              />
+            ) : (
+              <div className={`h-full w-full bg-gradient-to-br ${tour.gradient} flex items-center justify-center`}>
+                <MapPin className="h-8 w-8 text-white/30" />
+              </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+            <button
+              onClick={tour.youtubeId ? onPlay : onRequestTour}
+              className="absolute inset-0 flex items-center justify-center"
+              aria-label={tour.youtubeId ? "Play tour video" : "Request a tour"}
+            >
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/90 shadow-lg transition-transform hover:scale-110">
+                <Play className="h-5 w-5 translate-x-0.5 text-zinc-900" fill="currentColor" />
+              </div>
+            </button>
+            {!tour.youtubeId && (
+              <span className="absolute left-2 top-2 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-medium text-white/80">
+                Tour coming soon
+              </span>
+            )}
+            <span className="absolute bottom-2 right-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">
+              {tour.duration}
+            </span>
+          </>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="p-3">
+        <p className="font-semibold leading-tight">{tour.price}</p>
+        <p className="mt-0.5 text-sm font-medium leading-tight text-foreground">{tour.address}</p>
+        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+          <MapPin className="h-3 w-3" /> {tour.city}, {tour.state}
+        </p>
+        <div className="mt-1.5 flex gap-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-0.5"><Bed className="h-3.5 w-3.5" /> {tour.beds}</span>
+          <span className="flex items-center gap-0.5"><Bath className="h-3.5 w-3.5" /> {tour.baths}</span>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          className="mt-2.5 h-7 w-full text-xs"
+          onClick={onRequestTour}
+        >
+          <Video className="mr-1 h-3.5 w-3.5" /> Request a tour
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -282,7 +387,6 @@ function ListingBrowseCard({
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
       <div className="grid sm:grid-cols-[200px_1fr]">
-        {/* Thumbnail */}
         <div className="relative aspect-[4/3] sm:aspect-auto bg-muted">
           {thumb ? (
             <Image
@@ -298,15 +402,12 @@ function ListingBrowseCard({
               No photo
             </div>
           )}
-          {/* Play button overlay */}
           <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity hover:opacity-100">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow">
               <Play className="h-4 w-4 translate-x-0.5 text-zinc-900" fill="currentColor" />
             </div>
           </div>
         </div>
-
-        {/* Info */}
         <div className="flex flex-col justify-between gap-3 p-4">
           <div>
             <div className="flex items-start justify-between gap-2">
@@ -327,12 +428,7 @@ function ListingBrowseCard({
               )}
             </div>
           </div>
-
-          <Button
-            size="sm"
-            onClick={() => onRequestTour(fullAddress)}
-            className="self-start"
-          >
+          <Button size="sm" onClick={() => onRequestTour(fullAddress)} className="self-start">
             <Video className="mr-1.5 h-4 w-4" /> Request a tour
           </Button>
         </div>
