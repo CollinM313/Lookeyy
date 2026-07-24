@@ -1,11 +1,27 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { BrowseListingsClient } from "@/components/browse-listings-client";
+import { BrowseListingsClient, type DbVideoTour } from "@/components/browse-listings-client";
 import { getAllListings } from "@/lib/idx-broker";
+import { prisma } from "@/lib/prisma";
+import { extractYouTubeId } from "@/lib/youtube";
 import { Star, ShieldCheck, Users, CalendarCheck, Home as HomeIcon, Video } from "lucide-react";
 
 export default async function HomePage() {
-  const listings = await getAllListings().catch(() => []);
+  const [listings, dbListingsWithVideo] = await Promise.all([
+    getAllListings().catch(() => []),
+    prisma.listing.findMany({
+      where: { videoUrl: { not: null } },
+      select: {
+        id: true, title: true, address: true, city: true, state: true,
+        price: true, beds: true, baths: true, videoUrl: true,
+      },
+      orderBy: { updatedAt: "desc" },
+    }),
+  ]);
+
+  const dbVideos: DbVideoTour[] = dbListingsWithVideo
+    .map((l) => ({ ...l, videoId: extractYouTubeId(l.videoUrl!) }))
+    .filter((l): l is DbVideoTour => l.videoId !== null);
 
   return (
     <div className="flex flex-col">
@@ -20,7 +36,7 @@ export default async function HomePage() {
       </div>
 
       {/* ── Browse: filter pills + feed + map ── */}
-      <BrowseListingsClient listings={listings} />
+      <BrowseListingsClient listings={listings} dbVideos={dbVideos} />
 
       {/* ── How it works ── */}
       <section className="border-y border-border/70 bg-secondary/40 py-16">

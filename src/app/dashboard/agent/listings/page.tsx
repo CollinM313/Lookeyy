@@ -1,6 +1,8 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { ListingCard } from "@/components/listing-card";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, BedDouble, Bath } from "lucide-react";
+import { VideoUrlForm } from "@/components/agent/video-url-form";
 
 export const dynamic = "force-dynamic";
 
@@ -18,29 +20,58 @@ export default async function AgentListingsPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold">My listings</h2>
-        <p className="text-muted-foreground">Properties you cover for tours. Admins assign listings to agents.</p>
+        <p className="text-muted-foreground">
+          Add a YouTube tour video to any listing — it will appear on the public browse page.
+        </p>
       </div>
+
       {listings.length === 0 ? (
         <p className="text-muted-foreground">No listings assigned to you yet.</p>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="flex flex-col gap-6">
           {listings.map((l) => (
-            <ListingCard
-              key={l.id}
-              listing={{
-                id: l.id,
-                title: l.title,
-                city: l.city,
-                state: l.state,
-                price: l.price,
-                beds: l.beds,
-                baths: l.baths,
-                sqft: l.sqft,
-                propertyType: l.propertyType,
-                status: l.status,
-                photoUrl: l.photos[0]?.url ?? null,
-              }}
-            />
+            <div key={l.id} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+              <div className="flex items-start gap-4">
+                {/* Thumbnail */}
+                {l.photos[0]?.url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={l.photos[0].url}
+                    alt={l.title}
+                    className="h-20 w-28 flex-none rounded-lg object-cover"
+                  />
+                ) : (
+                  <div className="flex h-20 w-28 flex-none items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
+                    No photo
+                  </div>
+                )}
+
+                {/* Info */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold">{l.title}</p>
+                    <Badge variant="outline">{l.status}</Badge>
+                    {l.videoUrl && (
+                      <Badge className="bg-green-100 text-green-700 border-green-200">
+                        Video added
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5" /> {l.address}, {l.city}, {l.state}
+                  </p>
+                  <p className="mt-1 text-sm font-medium">
+                    ${l.price.toLocaleString()}
+                    <span className="ml-3 font-normal text-muted-foreground">
+                      <BedDouble className="mr-1 inline h-3.5 w-3.5" />{l.beds} bd
+                      <Bath className="ml-2 mr-1 inline h-3.5 w-3.5" />{l.baths} ba
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <VideoUrlForm listingId={l.id} currentVideoUrl={l.videoUrl} />
+            </div>
           ))}
         </div>
       )}

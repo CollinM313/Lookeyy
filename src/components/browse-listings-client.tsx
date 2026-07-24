@@ -9,6 +9,19 @@ import { ListingsMap, type MapListing } from "@/components/listings-map";
 import type { IdxListing } from "@/lib/idx-broker";
 import { getIdxThumbnail } from "@/lib/idx-broker";
 
+export type DbVideoTour = {
+  id: string;
+  title: string;
+  address: string;
+  city: string;
+  state: string;
+  price: number;
+  beds: number;
+  baths: number;
+  videoUrl: string;
+  videoId: string;
+};
+
 type VideoTour = {
   youtubeId: string | null;
   title: string;
@@ -18,12 +31,10 @@ type VideoTour = {
   price: string;
   beds: number;
   baths: number;
-  duration: string;
-  /** Tailwind gradient classes for placeholder thumbnail */
   gradient: string;
 };
 
-const VIDEO_TOURS: VideoTour[] = [
+const PLACEHOLDER_TOURS: VideoTour[] = [
   {
     youtubeId: "F7afbjxVYCY",
     title: "Mountain Retreat",
@@ -33,7 +44,6 @@ const VIDEO_TOURS: VideoTour[] = [
     price: "$749,000",
     beds: 4,
     baths: 3,
-    duration: "4:32",
     gradient: "from-blue-900 to-slate-700",
   },
   {
@@ -45,7 +55,6 @@ const VIDEO_TOURS: VideoTour[] = [
     price: "$1,250,000",
     beds: 5,
     baths: 4,
-    duration: "3:15",
     gradient: "from-amber-700 to-orange-900",
   },
   {
@@ -57,7 +66,6 @@ const VIDEO_TOURS: VideoTour[] = [
     price: "$2,400,000",
     beds: 5,
     baths: 5,
-    duration: "5:48",
     gradient: "from-emerald-800 to-teal-900",
   },
   {
@@ -69,7 +77,6 @@ const VIDEO_TOURS: VideoTour[] = [
     price: "$11,995,000",
     beds: 4,
     baths: 5,
-    duration: "6:20",
     gradient: "from-stone-700 to-zinc-800",
   },
   {
@@ -81,13 +88,13 @@ const VIDEO_TOURS: VideoTour[] = [
     price: "$589,000",
     beds: 3,
     baths: 2,
-    duration: "2:50",
     gradient: "from-cyan-800 to-blue-900",
   },
 ];
 
 type Props = {
   listings: IdxListing[];
+  dbVideos?: DbVideoTour[];
 };
 
 type FilterState = {
@@ -108,10 +115,25 @@ const BED_OPTIONS = [
   { label: "4+ beds", value: 4 },
 ];
 
-export function BrowseListingsClient({ listings }: Props) {
+export function BrowseListingsClient({ listings, dbVideos = [] }: Props) {
   const [filter, setFilter] = useState<FilterState>({ city: null, maxPrice: null, minBeds: null });
   const [modalAddress, setModalAddress] = useState<string | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
+
+  // Use DB videos when agents have added them; fall back to placeholders otherwise
+  const videoTours: VideoTour[] = dbVideos.length > 0
+    ? dbVideos.map((v) => ({
+        youtubeId: v.videoId,
+        title: v.title,
+        address: v.address,
+        city: v.city,
+        state: v.state,
+        price: `$${v.price.toLocaleString()}`,
+        beds: v.beds,
+        baths: v.baths,
+        gradient: "from-blue-900 to-slate-700",
+      }))
+    : PLACEHOLDER_TOURS;
 
   const cities = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -198,7 +220,7 @@ export function BrowseListingsClient({ listings }: Props) {
               Featured video tours
             </p>
             <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-              {VIDEO_TOURS.map((tour) => (
+              {videoTours.map((tour) => (
                 <VideoTourCard
                   key={tour.address}
                   tour={tour}

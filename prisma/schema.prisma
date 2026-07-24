@@ -157,6 +157,7 @@ model Listing {
   lat          Float?
   lng          Float?
   neighborhoodInfo String?   @db.Text
+  videoUrl     String?
   idxListingKey String?      @unique
   agentId      String?
   agent        User?         @relation("AgentListings", fields: [agentId], references: [id])
