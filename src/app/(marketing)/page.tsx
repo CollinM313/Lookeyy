@@ -1,63 +1,26 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { IdxListingCard } from "@/components/idx-listing-card";
-import { VideoTourSection, type FeaturedVideo } from "@/components/video-tour-section";
-import { ListingsMap, type MapListing } from "@/components/listings-map";
+import { BrowseListingsClient } from "@/components/browse-listings-client";
 import { getAllListings } from "@/lib/idx-broker";
 import { Star, ShieldCheck, Users, CalendarCheck, Home as HomeIcon, Video } from "lucide-react";
 
-const FEATURED_VIDEOS: FeaturedVideo[] = [
-  {
-    youtubeId: "F7afbjxVYCY",
-    title: "649 Saint Moritz Dr",
-    address: "649 Saint Moritz Dr",
-    city: "Big Bear Lake",
-    state: "CA",
-    description:
-      "A stunning mountain retreat in Big Bear Lake. Watch the full agent-guided walkthrough and see every room, the views, and the neighborhood — no trip required.",
-  },
-];
-
 export default async function HomePage() {
-  const allListings = await getAllListings().catch(() => []);
-
-  const mapListings: MapListing[] = allListings
-    .filter((l) => l.latitude && l.longitude)
-    .slice(0, 150)
-    .map((l) => ({
-      idxID: l.idxID,
-      listingID: l.listingID,
-      address: l.address,
-      cityName: l.cityName,
-      state: l.state,
-      latitude: l.latitude,
-      longitude: l.longitude,
-      listingPrice: l.listingPrice,
-      bedrooms: l.bedrooms,
-      totalBaths: l.totalBaths,
-    }));
-
-  const featuredListings = allListings.slice(0, 6);
+  const listings = await getAllListings().catch(() => []);
 
   return (
-    <div>
-      {/* ── Video Tours Hero ── */}
-      <VideoTourSection videos={FEATURED_VIDEOS} />
-
-      {/* ── Interactive Map ── */}
-      <section className="py-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-3xl font-bold">Explore homes near you</h2>
-            <p className="text-muted-foreground">
-              Click any pin to see listing details and request a video tour
-            </p>
-          </div>
-          <div className="mt-6 h-[480px] overflow-hidden rounded-2xl border border-border shadow-sm">
-            <ListingsMap listings={mapListings} />
-          </div>
+    <div className="flex flex-col">
+      {/* ── Hero ── */}
+      <div className="border-b border-border px-4 py-6 sm:px-6">
+        <div className="mx-auto max-w-[1600px]">
+          <h1 className="text-2xl font-bold sm:text-3xl">Browse video home tours</h1>
+          <p className="mt-1 text-muted-foreground">
+            Find tours of homes on the map, then request a live or recorded tour from a local, knowledgeable agent in that area.
+          </p>
         </div>
-      </section>
+      </div>
+
+      {/* ── Browse: filter pills + feed + map ── */}
+      <BrowseListingsClient listings={listings} />
 
       {/* ── How it works ── */}
       <section className="border-y border-border/70 bg-secondary/40 py-16">
@@ -67,18 +30,18 @@ export default async function HomePage() {
             {[
               {
                 icon: HomeIcon,
-                title: "1. Watch a home tour",
-                body: "Browse real agent-filmed video tours and see every room before you ever set foot inside.",
+                title: "1. Browse tours",
+                body: "Scroll through real agent-filmed video tours and see every room before you ever set foot inside.",
               },
               {
                 icon: Video,
                 title: "2. Request your tour",
-                body: "Like what you see? Request a live FaceTime-style walkthrough or a custom recorded tour.",
+                body: "Like what you see? Request a live video walkthrough or a custom recorded tour — on your schedule.",
               },
               {
                 icon: CalendarCheck,
                 title: "3. Meet your agent",
-                body: "A vetted local agent walks you through the home — live or on video — on your schedule.",
+                body: "A vetted local agent walks you through the home, answers your questions, and helps you make an offer.",
               },
             ].map((step) => (
               <div
@@ -94,41 +57,13 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── Featured Listings ── */}
-      <section className="py-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex items-end justify-between">
-            <h2 className="text-3xl font-bold">Featured homes</h2>
-            <Button asChild variant="ghost">
-              <Link href="/listings">View all &rarr;</Link>
-            </Button>
-          </div>
-
-          {featuredListings.length > 0 ? (
-            <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {featuredListings.map((l) => (
-                <IdxListingCard key={`${l.idxID}-${l.listingID}`} listing={l} />
-              ))}
-            </div>
-          ) : (
-            <div className="mt-8 rounded-2xl border border-dashed border-border py-12 text-center text-muted-foreground">
-              <p>Listings loading — check back shortly.</p>
-              <Button asChild variant="outline" className="mt-4">
-                <Link href="/listings">Browse all listings</Link>
-              </Button>
-            </div>
-          )}
-        </div>
-      </section>
-
       {/* ── Agent CTA ── */}
       <section className="bg-primary py-16 text-primary-foreground">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <Users className="mx-auto h-10 w-10" />
           <h2 className="mt-4 text-3xl font-bold">Are you a local real estate agent?</h2>
           <p className="mt-3 text-primary-foreground/90">
-            Join Lookeyy as a tour partner — get matched with motivated buyers and conduct tours
-            on your schedule.
+            Join Lookeyy as a tour partner — get matched with motivated buyers and conduct tours on your schedule.
           </p>
           <Button asChild size="lg" variant="secondary" className="mt-6">
             <Link href="/become-a-partner">Apply to become a partner</Link>
